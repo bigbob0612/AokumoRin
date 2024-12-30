@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <title>Music Player</title>
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+ <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+ <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+ <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+ <script src="https://www.youtube.com/iframe_api"></script>
+ <style>
+   body {
+     margin: 0;
+     padding: 0;
+     background-color: #f3f3f3;
+   }
+ </style>
+</head>
+<body>
+ <div id="root"></div>
+
+ <script type="text/babel">
+   function MusicPlayer() {
+     const [volume, setVolume] = React.useState(100);
+     const [showVolume, setShowVolume] = React.useState(false);
+     const [isPlaying, setIsPlaying] = React.useState(false);
+     const [currentTrackIndex, setCurrentTrackIndex] = React.useState(0);
+     const [currentCaption, setCurrentCaption] = React.useState('');
+     const playerRef = React.useRef(null);
+
+     const tracks = [
+       {
+         name: "유령도쿄",
+         videoId: "UWa_OiXDiQA",
+         thumbnail: "1번.png"
+       },
+       {
+         name: "안녕, 또 언젠가!",
+         videoId: "zcaAsuA54pI",
+         thumbnail: "2번.png"
+       },
+       {
+         name: "Rumor",
+         videoId: "oAa_PoRopSs",
+         thumbnail: "3번.png"
+       },
+       {
+         name: "무희",
+         videoId: "O1MqvWf7q58",
+         thumbnail: "4번.png"
+       },
+       {
+         name: "사랑 감기에 실려",
+         videoId: "-a6y64hn4DA",
+         thumbnail: "5번.png"
+       },
+       {
+         name: "Overdose",
+         videoId: "pM8_wnJ7JsE",
+         thumbnail: "6번.png"
+       },
+       {
+         name: "Happy End",
+         videoId: "ebnM6X6B1Yg",
+         thumbnail: "7번.png"
+       }
+     ];
+
+     React.useEffect(() => {
+       if (!window.YT) {
+         const tag = document.createElement('script');
+         tag.src = 'https://www.youtube.com/iframe_api';
+         const firstScriptTag = document.getElementsByTagName('script')[0];
+         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+         
+         window.onYouTubeIframeAPIReady = initializePlayer;
+       } else {
+         initializePlayer();
+       }
+     }, []);
+
+     function initializePlayer() {
+       playerRef.current = new window.YT.Player('youtube-player', {
+         height: '0',
+         width: '0',
+         videoId: tracks[currentTrackIndex].videoId,
+         playerVars: {
+           autoplay: 0,
+           controls: 0,
+           cc_load_policy: 1,
+           cc_lang_pref: 'ko'
+         },
+         events: {
+           onStateChange: onPlayerStateChange,
+           onReady: () => {
+             playerRef.current.setVolume(volume);
+           }
+         }
+       });
+     }
+
+     function onPlayerStateChange(event) {
+       setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
+       
+       if (event.data === window.YT.PlayerState.PLAYING) {
+         startCaptionSync();
+       }
+     }
+
+     function startCaptionSync() {
+       setInterval(() => {
+         if (playerRef.current) {
+           const currentTime = playerRef.current.getCurrentTime();
+           const captions = playerRef.current.getOptions('captions');
+           if (captions && captions.length > 0) {
+             setCurrentCaption(captions[0].text);
+           } else {
+             setCurrentCaption("자막을 불러올 수 없습니다.");
+           }
+         }
+       }, 100);
+     }
+
+     function handleVolumeClick(e) {
+       e.preventDefault();
+       setShowVolume(true);
+       setTimeout(() => setShowVolume(false), 3000);
+     }
+
+     function togglePlay() {
+       if (playerRef.current) {
+         if (isPlaying) {
+           playerRef.current.pauseVideo();
+         } else {
+           playerRef.current.playVideo();
+         }
+       }
+     }
+
+     function nextTrack() {
+       setCurrentTrackIndex((prev) => (prev + 1) % tracks.length);
+       setIsPlaying(false);
+       if (playerRef.current) {
+         playerRef.current.loadVideoById(tracks[(currentTrackIndex + 1) % tracks.length].videoId);
+       }
+     }
+
+     function prevTrack() {
+       setCurrentTrackIndex((prev) => (prev - 1 + tracks.length) % tracks.length);
+       setIsPlaying(false);
+       if (playerRef.current) {
+         playerRef.current.loadVideoById(tracks[(currentTrackIndex - 1 + tracks.length) % tracks.length].videoId);
+       }
+     }
+
+     return (
+       <div className="w-72" style={{ backgroundColor: '#f3f3f3' }}>
+         <div id="youtube-player" className="hidden"></div>
+         
+         <div className="p-4">
+           <div className="flex items-center justify-between mb-2">
+             <div className="relative flex items-center">
+               <button
+                 onContextMenu={handleVolumeClick}
+                 className="p-2 hover:bg-gray-200 rounded-full"
+                 style={{ color: '#575757' }}
+               >
+                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                   <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                 </svg>
+               </button>
+               
+               {showVolume && (
+                 <div className="absolute left-12 top-1/2 -translate-y-1/2 w-32 h-8 bg-white shadow-lg rounded-lg flex items-center px-2">
+                   <input
+ type="range"
+ min="0"
+ max="100"
+ 값 = {volume}
+ 온체인지={(e) => {
+ const newVolume = Number(예: target.value);
+ setVolume(새 볼륨);
+ 만약 (playerRef.current) {
+ 플레이어 참조.현재.setVolume(새 볼륨);
+ }
+ }}
+ className="w-full"
+ />
+ </div>
+ )}
+ </div>
+ </div>
+
+ <div className="text-center mb-2">
+ <h2 className="폰트-미디어 텍스트-LG" 스타일={{ 색상: '#575757'}}}>
+ {tracks[currentTrackIndex].이름}
+ </h2>
+ </div>
+
+ <div className="상대 w-full h-64 mb-4 라운드 오버플로 숨기기">
+ <img 
+ src={tracks[currentTrackIndex].썸네일}
+ alt="앨범 아트"
+ className="w-full h-full 객체 커버"
+ />
+ </div>
+
+ <div className="플렉스 플렉스콜 아이템-센터 갭-4">
+ <div className="text-center text-sm" 스타일={{ 색상: '#575757'}}}>
+ {현재 캡션}
+ </div>
+             
+ <div className="항목 간 유연한 정당화-중심 w-전체 px-8">
+ <클릭={프리브트랙} 스타일={{ 색상 버튼: '#575757'}}}>
+ <svg xmlns="http://www.w3.org/2000/svg " 너비="24" 높이="24" 뷰박스="0 0 24" 채우기="none" 스트로크="현재 색상" 스트로크 폭="2" 스트로크Linecap="라운드 스트로크Linejoin="라운드" 스트로크>
+ <polygon 포인트="19 20 9 12 19 4 19 20"></polygon>
+ <line x1="5" y1="19" x2="5" y2="5"></line>
+ </svg>
+ </버튼>
+ 버튼 
+ className="w-12 h-12 플렉스 항목-중심 정당화-중심 반올림"
+ onClick={togglePlay}
+ 스타일={{ 테두리: '2px 솔리드 #575757'}}
+ >
+ 재생 중인가요?
+ <div 스타일={{ 너비: '16 px', 높이: '16 px', 경계왼쪽: '2 px 솔리드 #575757', 경계오른쪽: '2 px 솔리드 #575757'}} />
+ ) : (
+ <div 스타일={{ 
+ 너비: '0',
+ 높이: '0',
+ 여백 왼쪽: '4px',
+ borderTop: '8px 고체 투명',
+ borderLeft: '12px 솔리드 #575757',
+ 테두리 하단: '8px 솔리드 투명'
+ }} />
+ )}
+ </버튼>
+ <클릭={nextTrack} 스타일={{ 색상 버튼: '#575757' }}>
+ <svg xmlns="http://www.w3.org/2000/svg " 너비="24" 높이="24" 뷰박스="0 0 24" 채우기="none" 스트로크="현재 색상" 스트로크 폭="2" 스트로크Linecap="라운드 스트로크Linejoin="라운드" 스트로크>
+ <polygon 포인트="5 4 15 12 5 20 5 4"></polygon>
+ <line x1="19" y1="5" x2="19" y2="19"></line>
+ </svg>
+ </버튼>
+ </div>
+ </div>
+ </div>
+ </div>
+ );
+ }
+
+ ReactDOM.render(<MusicPlayer />, document.getElementById('root');
+ </script>
+</body>
+</html>
