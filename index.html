@@ -1,22 +1,22 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html>
-<head>
-  <title>Music Player</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
-  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-  <script src="https://www.youtube.com/iframe_api"></script>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #f3f3f3;
+<머리>
+ <title>음악 플레이어</title>
+ <링크 rel="스타일시트" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css ">
+ <script src="https://unpkg.com/react @17/umd/react.development.js"></script>
+ <script src="https://unpkg.com/react-dom @17/umd/react-dom.development.js"></script>
+ <script src="https://unpkg.com/babel-standalone @6/babel.min.js"></script>
+ <script src="https://www.youtube.com/iframe_api "></script>
+ <스타일>
+ 본문 {
+ 여백: 0;
+ 패딩: 0;
+ background-color: #f3f3f3;
     }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
+ </스타일>
+</머리>
+<바디>
+ <div id="root"></div>
 
  <script type="text/babel">
     기능. 뮤직플레이어() {
@@ -26,73 +26,74 @@
  const playerRef = React.useRef(null);
 
  const tracks = [
- {이름: "유령도쿄", videoId: "UWa_OiXDiQA", thumbnail: "1.png" },
- {이름: "안녕, 또 언젠가!", videoId: "zcaAsuA54pI", 썸네일: "2.png" }
+ {이름: "고스트 도쿄", videoId: "UWa_OiXDiQA", thumbnail: "1.png" },
+ {이름: "안녕, 다시 만나요!", videoId: "zcaAsuA54pI", 썸네일: "2.png" },
  {이름: "루머", videoId: "oAa_PoRopS", 썸네일: "3.png" }
  ];
 
  React.useEffect((() => {
  const tag = document.createElement('script');
  tag.src = 'https://www.youtube.com/iframe_api';
- document.body.appendChild(태그);
+        document.body.appendChild(tag);
 
- window.YouTubeIframe에서APIReady = () => {
- playerRef.current = 새 창.YT.Player('유튜브 플레이어'), {
- 높이: '0',
- 너비: '0',
- videoId: tracks[currentTrackIndex].videoId,
- 이벤트: {
- 상태 변경: (이벤트) => {
- setIsPlaying(event.data === 창).YT.PlayerState.재생 중);
- },
- },
- });
- };
- },[현재 트랙인덱스];
+        window.onYouTubeIframeAPIReady = () => {
+          playerRef.current = new window.YT.Player('youtube-player', {
+            height: '0',
+            width: '0',
+            videoId: tracks[currentTrackIndex].videoId,
+            events: {
+              onStateChange: (event) => {
+                setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
+              },
+            },
+          });
+        };
+      }, [currentTrackIndex]);
 
- const 토글플레이 = () => {
- 만약 (playerRef.current) {
- 재생 중인가요? playerRef.current.pauseVideo() : playerRef.current.비디오 재생();
+      const togglePlay = () => {
+        if (playerRef.current) {
+          isPlaying ? playerRef.current.pauseVideo() : playerRef.current.playVideo();
         }
- };
+      };
 
- const nextTrack = () => {
- setCurrentTrackIndex((이전) => (prev + 1) % tracks.length);
- };
+      const nextTrack = () => {
+        setCurrentTrackIndex((prev) => (prev + 1) % tracks.length);
+      };
 
- const prevTrack = () => {
- setCurrentTrackIndex((사전) => (prev - 1 + tracks.length) % tracks.length);
- };
+      const prevTrack = () => {
+        setCurrentTrackIndex((prev) => (prev - 1 + tracks.length) % tracks.length);
+      };
 
-      돌아가다 (
- <div className="w-72 bg-흰색 p-4 둥근-lg 섀도우-lg">
- <div id="youtube 플레이어" 클래스이름="숨겨진"></div>
- <div className="text-center mb-4">
- <h2 className="text-xl font-semibold">{tracks[currentTrackIndex].이름}//h2>
- </div>
- <div className="상대 w-full h-48 mb-4">
- <img
- src={tracks[currentTrackIndex].썸네일}
- alt="앨범 아트"
- className="w-full h-full 객체-커버 라운드-LG"
+      return (
+        <div className="w-72 bg-white p-4 rounded-lg shadow-lg">
+          <div id="youtube-player" className="hidden"></div>
+          <div className="text-center mb-4">
+            <h2 className="text-xl font-semibold">{tracks[currentTrackIndex].name}</h2>
+          </div>
+          <div className="relative w-full h-48 mb-4">
+            <img
+              src={tracks[currentTrackIndex].thumbnail}
+              alt="Album Art"
+              className="w-full h-full object-cover rounded-lg"
             />
- </div>
- <div className="플렉스 항목-센터 정당화-어라운드">
- 클릭={prevTrack}>Prev</버튼>
- 버튼
- onClick={togglePlay}
- className="w-12 h-12 플렉스 아이템-중심 정당화-중심 원형-전체 테두리-2 테두리-gray-500"
-            >
- {재생 중인가요? "일시 중지" : "재생"}
- </버튼>
- 클릭={다음 트랙}>다음</버튼>
- </div>
- </div>
- );
+          </div>
+          <div className="flex items-center justify-around">
+            <button onClick={prevTrack} className="w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-500">
+              Prev
+            </button>
+            <button onClick={togglePlay} className="w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-500">
+              {isPlaying ? "Pause" : "Play"}
+            </button>
+            <button onClick={nextTrack} className="w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-500">
+              Next
+            </button>
+          </div>
+        </div>
+      );
     }
 
- ReactDOM.render(<MusicPlayer />, document.getElementById('root');
- </script>
+    ReactDOM.render(<MusicPlayer />, document.getElementById('root'));
+  </script>
 </body>
 </html>
 
