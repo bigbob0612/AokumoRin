@@ -1,90 +1,56 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Volume2, SkipBack, SkipForward } from 'lucide-react';
+React, { useState}를 'react'에서 가져옵니다;
+'루시드 반응'에서 {Volume2, SkipBack, SkipForward} 가져오기;
 
 const MusicPlayer = () => {
-  const [volume, setVolume] = useState(100);
-  const [showVolume, setShowVolume] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [currentLyric, setCurrentLyric] = useState("");
-  const [playerReady, setPlayerReady] = useState(false);
-  const playerRef = useRef(null);
-  const volumeTimeoutRef = useRef(null);
+ const [volume, setVolume] = useState(100);
+ const [showVolume, setShowVolume] = useState(거짓);
+ const [isPlaying, setIsPlaying] = useState(거짓);
+ const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
 
-  const tracks = [
-    {
-      name: "유령도쿄",
-      youtubeId: "VIDEO_ID_1",
-      thumbnail: `https://img.youtube.com/vi/VIDEO_ID_1/maxresdefault.jpg`
-    }
-  ];
+ const tracks = [
+ {
+ name: "유령도쿄",
+ videoId: "VIDEO_ID_1",
+ lyrics: "잃어버리는 것에 익숙해져 가는 가운데"
+ }
+ ];
 
-  useEffect(() => {
-    const tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    const firstScript = document.getElementsByTagName('script')[0];
-    firstScript.parentNode.insertBefore(tag, firstScript);
+ const handleVolumeClick = (e) => {
+ e.preventDefault();
+ setShowVolume(참);
+ setTimeout((() => setShowVolume(거짓), 3000);
+ };
 
-    window.onYouTubeIframeAPIReady = () => {
-      playerRef.current = new window.YT.Player('youtube-player', {
-        height: '0',
-        width: '0',
-        videoId: tracks[currentTrackIndex].youtubeId,
-        events: {
-          onReady: () => setPlayerReady(true),
-          onStateChange: (event) => {
-            setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
-          }
-        }
-      });
-    };
-  }, [currentTrackIndex]);
+ const 토글플레이 = () => {
+ constifram = 문서.쿼리 선택기('iframe');
+ 만약 (ifframe) {
+ iframe.contentWindow.postMessage(
+ JSON.stringify({
+ 이벤트: '명령',
+ func: 재생 중인가요? '비디오 일시 정지' : '비디오 재생'
+ }),
+ '*'
+ );
+ setIsPlaying(!is)재생 중);
+ }
+ };
 
-  const handleVolumeChange = (newVolume) => {
-    setVolume(newVolume);
-    if (playerReady && playerRef.current) {
-      playerRef.current.setVolume(newVolume);
-    }
-  };
+ const nextTrack = () => {
+ setCurrentTrackIndex((이전) => (prev + 1) % tracks.length);
+ };
 
-  const handleVolumeClick = (e) => {
-    e.preventDefault();
-    setShowVolume(true);
-    if (volumeTimeoutRef.current) clearTimeout(volumeTimeoutRef.current);
-    volumeTimeoutRef.current = setTimeout(() => setShowVolume(false), 3000);
-  };
+ const prevTrack = () => {
+ setCurrentTrackIndex((사전) => (prev - 1 + tracks.length) % tracks.length);
+ };
 
-  const togglePlay = () => {
-    if (playerReady && playerRef.current) {
-      if (isPlaying) {
-        playerRef.current.pauseVideo();
-      } else {
-        playerRef.current.playVideo();
-      }
-    }
-  };
-
-  const nextTrack = () => {
-    const newIndex = (currentTrackIndex + 1) % tracks.length;
-    setCurrentTrackIndex(newIndex);
-  };
-
-  const prevTrack = () => {
-    const newIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
-    setCurrentTrackIndex(newIndex);
-  };
-
-  return (
-    <div className="w-72 bg-white">
-      <div id="youtube-player" className="hidden"></div>
-      
-      <div className="p-4">
-        {/* Volume Control */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="relative flex items-center">
-            <button
-              onContextMenu={handleVolumeClick}
-              className="p-2 hover:bg-gray-100 rounded-full"
+ 반품 (
+ <div className="w-72 bg-white">
+ <div className="p-4">
+ <div className="플렉스 항목-중심 정당화-mb-2 사이">
+ <div className="상대 플렉스 항목-센터">
+ 버튼
+ OnContextMenu={handleVolumeClick}
+ className="p-2 호버:bg-gray-100 반올림"
             >
               <Volume2 size={24} className="text-gray-600" />
             </button>
@@ -96,50 +62,63 @@ const MusicPlayer = () => {
                   min="0"
                   max="100"
                   value={volume}
-                  onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-            )}
-          </div>
-        </div>
+                  onChange={(e) => {
+                    setVolume(Number(e.target.value));
+                    const iframe = document.querySelector('iframe');
+                    if (iframe) {
+                      iframe.contentWindow.postMessage(
+                        JSON.stringify({
+                          event: 'command',
+                          func: 'setVolume',
+                          args: [e.target.value]
+                        }),
+                        '*'
+ );
+ }
+ }}
+ className="w-full"
+ />
+ </div>
+ )}
+ </div>
+ </div>
 
-        {/* Title */}
-        <div className="text-center mb-2">
-          <h2 className="font-medium text-lg text-gray-800">
-            {tracks[currentTrackIndex].name}
-          </h2>
-        </div>
+ <div className="text-center mb-2">
+ <h2 className="폰트-미디어 텍스트-LG 텍스트-gray-800">
+ {tracks[currentTrackIndex].이름}
+ </h2>
+ </div>
 
-        {/* Thumbnail */}
-        <div className="relative w-full h-64 mb-4 bg-gray-100 rounded overflow-hidden">
-          <img 
-            src={tracks[currentTrackIndex].thumbnail}
-            alt="Thumbnail"
-            className="w-full h-full object-cover"
-          />
-        </div>
+ <div className="상대 w-full h-64 mb-4 bg-gray-100 라운드 오버플로-숨김">
+ <ifframe
+ 너비="100%"
+ 높이="100%"
+ src={'https://www.youtube.com/embed/$ {tracks[currentTrackIndex].videoId}?enablejsapi=1&origin=${window.location.origin}'}
+ frameBorder="0"
+ allow="acceler 측정기; 자동 재생; 클립보드 쓰기; 암호화된 미디어; 자이로스코프; 그림으로 표시"
+ 전체 화면 허용
+ />
+ </div>
 
-        {/* Controls with Lyrics */}
-        <div className="flex flex-col items-center gap-4">
-          <div className="text-center text-sm text-gray-600">
-            {currentLyric || "잃어버리는 것에 익숙해져 가는 가운데"}
-          </div>
+ <div className="플렉스 플렉스콜 아이템-센터 갭-4">
+ <div className="text-center text-sm text-gray-600">
+ {tracks[currentTrackIndex].가사}
+ </div>
           
-          <div className="flex justify-between items-center w-full px-8">
-            <button onClick={prevTrack} className="text-gray-600">
-              <SkipBack size={24} />
-            </button>
-            <button 
-              className="w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-600"
-              onClick={togglePlay}
-            >
-              {isPlaying ? (
-                <div className="w-4 h-4 border-l-2 border-r-2 border-gray-600" />
-              ) : (
-                <div className="w-0 h-0 border-t-8 border-t-transparent border-l-12 border-l-gray-600 border-b-8 border-b-transparent ml-1" />
-              )}
-            </button>
+ <div className="항목 간 유연한 정당화-중심 w-전체 px-8">
+ <Click={prevTrack} className="text-gray-600" 버튼 클릭>
+ <스킵백 사이즈={24} />
+ </버튼>
+ 버튼 
+ className="w-12 h-12 플렉스 아이템-중심 정당화-중심 원형-전체 테두리-2 테두리-gray-600"
+ onClick={togglePlay}
+ >
+ 재생 중인가요?
+ <div className="w-4 h-4 border-l-2 border-r-2 border-gray-600" />
+ ) : (
+ <div className="w-0 h-0 border-t-8 border-t-8 border-l-12 border-l-gray-600 border-b-8 border-b-transpa rent ml-1" />
+ )}
+ </버튼>
             <button onClick={nextTrack} className="text-gray-600">
               <SkipForward size={24} />
             </button>
@@ -150,4 +129,4 @@ const MusicPlayer = () => {
   );
 };
 
-export default MusicPlayer;
+기본 음악 플레이어 내보내기;
