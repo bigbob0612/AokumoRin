@@ -1,0 +1,153 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Volume2, SkipBack, SkipForward } from 'lucide-react';
+
+const MusicPlayer = () => {
+  const [volume, setVolume] = useState(100);
+  const [showVolume, setShowVolume] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [currentLyric, setCurrentLyric] = useState("");
+  const [playerReady, setPlayerReady] = useState(false);
+  const playerRef = useRef(null);
+  const volumeTimeoutRef = useRef(null);
+
+  const tracks = [
+    {
+      name: "유령도쿄",
+      youtubeId: "VIDEO_ID_1",
+      thumbnail: `https://img.youtube.com/vi/VIDEO_ID_1/maxresdefault.jpg`
+    }
+  ];
+
+  useEffect(() => {
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScript = document.getElementsByTagName('script')[0];
+    firstScript.parentNode.insertBefore(tag, firstScript);
+
+    window.onYouTubeIframeAPIReady = () => {
+      playerRef.current = new window.YT.Player('youtube-player', {
+        height: '0',
+        width: '0',
+        videoId: tracks[currentTrackIndex].youtubeId,
+        events: {
+          onReady: () => setPlayerReady(true),
+          onStateChange: (event) => {
+            setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
+          }
+        }
+      });
+    };
+  }, [currentTrackIndex]);
+
+  const handleVolumeChange = (newVolume) => {
+    setVolume(newVolume);
+    if (playerReady && playerRef.current) {
+      playerRef.current.setVolume(newVolume);
+    }
+  };
+
+  const handleVolumeClick = (e) => {
+    e.preventDefault();
+    setShowVolume(true);
+    if (volumeTimeoutRef.current) clearTimeout(volumeTimeoutRef.current);
+    volumeTimeoutRef.current = setTimeout(() => setShowVolume(false), 3000);
+  };
+
+  const togglePlay = () => {
+    if (playerReady && playerRef.current) {
+      if (isPlaying) {
+        playerRef.current.pauseVideo();
+      } else {
+        playerRef.current.playVideo();
+      }
+    }
+  };
+
+  const nextTrack = () => {
+    const newIndex = (currentTrackIndex + 1) % tracks.length;
+    setCurrentTrackIndex(newIndex);
+  };
+
+  const prevTrack = () => {
+    const newIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+    setCurrentTrackIndex(newIndex);
+  };
+
+  return (
+    <div className="w-72 bg-white">
+      <div id="youtube-player" className="hidden"></div>
+      
+      <div className="p-4">
+        {/* Volume Control */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="relative flex items-center">
+            <button
+              onContextMenu={handleVolumeClick}
+              className="p-2 hover:bg-gray-100 rounded-full"
+            >
+              <Volume2 size={24} className="text-gray-600" />
+            </button>
+            
+            {showVolume && (
+              <div className="absolute left-12 top-1/2 -translate-y-1/2 w-32 h-8 bg-white shadow-lg rounded-lg flex items-center px-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={volume}
+                  onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="text-center mb-2">
+          <h2 className="font-medium text-lg text-gray-800">
+            {tracks[currentTrackIndex].name}
+          </h2>
+        </div>
+
+        {/* Thumbnail */}
+        <div className="relative w-full h-64 mb-4 bg-gray-100 rounded overflow-hidden">
+          <img 
+            src={tracks[currentTrackIndex].thumbnail}
+            alt="Thumbnail"
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        {/* Controls with Lyrics */}
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-center text-sm text-gray-600">
+            {currentLyric || "잃어버리는 것에 익숙해져 가는 가운데"}
+          </div>
+          
+          <div className="flex justify-between items-center w-full px-8">
+            <button onClick={prevTrack} className="text-gray-600">
+              <SkipBack size={24} />
+            </button>
+            <button 
+              className="w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-600"
+              onClick={togglePlay}
+            >
+              {isPlaying ? (
+                <div className="w-4 h-4 border-l-2 border-r-2 border-gray-600" />
+              ) : (
+                <div className="w-0 h-0 border-t-8 border-t-transparent border-l-12 border-l-gray-600 border-b-8 border-b-transparent ml-1" />
+              )}
+            </button>
+            <button onClick={nextTrack} className="text-gray-600">
+              <SkipForward size={24} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default MusicPlayer;
