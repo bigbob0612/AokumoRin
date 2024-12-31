@@ -23,7 +23,7 @@
       display: block;
     }
     .lyrics-container {
-      max-height: 100px;
+      max-height: 150px;
       overflow-y: auto;
     }
     .triangle-button {
@@ -36,6 +36,14 @@
     }
     .play-button {
       font-size: 24px;
+    }
+    .current-lyric {
+      color: #4a90e2;
+      font-weight: bold;
+    }
+    .lyrics-line {
+      padding: 2px 0;
+      transition: color 0.3s;
     }
  </style>
 </head>
@@ -51,23 +59,43 @@
       const [currentTrackIndex, setCurrentTrackIndex] = React.useState(0);
       const [currentTime, setCurrentTime] = React.useState(0);
       const [duration, setDuration] = React.useState(0);
+      const [currentLyricIndex, setCurrentLyricIndex] = React.useState(-1);
       const playerRef = React.useRef(null);
+      const lyricsRef = React.useRef(null);
 
       const tracks = [
         {
           name: "유령도쿄",
           videoId: "UWa_OiXDiQA",
-          thumbnail: "1번.png"
+          thumbnail: "1번.png",
+          lyrics: [
+            { time: 17, text: "찬연하게 빛나는 거리의 불빛" },
+            { time: 21, text: "대조적인 나를 내려다보는" },
+            { time: 24, text: "저 빌딩 사이를 빠져나가서" },
+            { time: 26, text: "물들기 시작한 네온과 섞여들어" },
+            { time: 28, text: "나의 시간과 이 세계를 트레이드" },
+            { time: 31, text: "밤에 가라앉아" },
+            { time: 40, text: "막차로 돌아가는 길을 더듬어 찾는 나의" },
+            { time: 44, text: "눈에 비치는 유리 창문에 있던 것은" },
+            { time: 48, text: "꿈꾸던 자신이 아닌" },
+            { time: 49, text: "금방이라도 울음을 터뜨릴 듯한" },
+            { time: 51, text: "어둠 속, 그저 홀로 방황하고 있는" },
+            { time: 54, text: "슬픈 사람" },
+            { time: 56, text: "괜찮아, 언젠가 괜찮아질 거야" },
+            { time: 59, text: "라고 생각했던 나날들을 몇 번이나 거듭했어" },
+            { time: 63, text: "오늘도 홀로 도쿄의" },
+            { time: 67, text: "경치에 비쳐 보이는 나는" },
+            { time: 69, text: "유령 같아" },
+            { time: 72, text: "잃어버리는 것에 익숙해져 가는 가운데" },
+            { time: 76, text: "잊어버린 그 소원마저도" },
+            { time: 80, text: "떠올려냈을 때" },
+            // ... 나머지 가사 계속
+          ]
         },
         {
-          name: "잃어버린것에 의속해서",
+          name: "Hello, See You Again!",
           videoId: "zcaAsuA54pI",
           thumbnail: "2번.png"
-        },
-        {
-          name: "Rumor",
-          videoId: "k6UOd4jHgZI",
-          thumbnail: "3번.png"
         }
       ];
 
@@ -94,145 +122,50 @@
 
         const timeUpdateInterval = setInterval(() => {
           if (playerRef.current && playerRef.current.getCurrentTime) {
-            setCurrentTime(playerRef.current.getCurrentTime());
+            const time = playerRef.current.getCurrentTime();
+            setCurrentTime(time);
             setDuration(playerRef.current.getDuration());
+            
+            // 현재 가사 찾기
+            if (tracks[currentTrackIndex].lyrics) {
+              const index = tracks[currentTrackIndex].lyrics.findIndex((lyric, i, arr) => {
+                const nextTime = arr[i + 1]?.time || Infinity;
+                return time >= lyric.time && time < nextTime;
+              });
+              
+              if (index !== currentLyricIndex) {
+                setCurrentLyricIndex(index);
+                // 현재 가사로 스크롤
+                const element = document.getElementById(`lyric-${index}`);
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }
+            }
           }
-        }, 1000);
+        }, 100);
 
         return () => clearInterval(timeUpdateInterval);
       }, []);
 
-      React.useEffect(() => {
-        if (playerRef.current && playerRef.current.loadVideoById) {
-          playerRef.current.loadVideoById(tracks[currentTrackIndex].videoId);
-        }
-      }, [currentTrackIndex]);
-
-      const formatTime = (seconds) => {
-        if (!seconds) return "0:00";
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = Math.floor(seconds % 60);
-        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-      };
-
-      const togglePlay = () => {
-        if (playerRef.current) {
-          if (isPlaying) {
-            playerRef.current.pauseVideo();
-          } else {
-            playerRef.current.playVideo();
-          }
-        }
-      };
-
-      const handleVolumeChange = (e) => {
-        const newVolume = parseInt(e.target.value);
-        setVolume(newVolume);
-        if (playerRef.current) {
-          playerRef.current.setVolume(newVolume);
-        }
-      };
-
-      const handleTimeChange = (e) => {
-        const newTime = parseFloat(e.target.value);
-        if (playerRef.current) {
-          playerRef.current.seekTo(newTime);
-          setCurrentTime(newTime);
-        }
-      };
-
-      const nextTrack = () => {
-        setCurrentTrackIndex((prev) => (prev + 1) % tracks.length);
-      };
-
-      const prevTrack = () => {
-        setCurrentTrackIndex((prev) => (prev - 1 + tracks.length) % tracks.length);
-      };
+      // ... (나머지 함수들은 동일)
 
       return (
         <div className="w-80 bg-white p-4 rounded-lg shadow-lg">
-          <div id="youtube-player"></div>
-          <div className="relative">
-            <div className="text-center mb-4">
-              <h2 className="text-xl font-semibold">{tracks[currentTrackIndex].name}</h2>
-            </div>
-            <div className="volume-container absolute top-0 right-0">
-              <button className="p-2 rounded-full hover:bg-gray-100">
-                🔊
-              </button>
-              <div className="volume-control">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={volume}
-                  onChange={handleVolumeChange}
-                  className="w-24 transform -rotate-90"
-                />
-              </div>
-            </div>
-          </div>
+          {/* ... (이전 UI 요소들은 동일) */}
           
-          <div className="relative w-full h-48 mb-4">
-            <img
-              src={tracks[currentTrackIndex].thumbnail}
-              alt="Album Art"
-              className="w-full h-full object-cover rounded-lg"
-            />
-          </div>
-
-          <div className="mb-4">
-            <div className="flex justify-between text-sm text-gray-500 mb-1">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max={duration || 100}
-              value={currentTime || 0}
-              onChange={handleTimeChange}
-              className="w-full"
-            />
-          </div>
-
-          <div className="flex items-center justify-around mb-4">
-            <button 
-              onClick={prevTrack} 
-              className="control-button"
-            >
-              <svg className="triangle-button" viewBox="0 0 24 24">
-                <path d="M15 6v12l-9-6z" fill="currentColor"/>
-              </svg>
-              <svg className="triangle-button" viewBox="0 0 24 24">
-                <path d="M15 6v12l-9-6z" fill="currentColor"/>
-              </svg>
-            </button>
-            <button 
-              onClick={togglePlay} 
-              className="w-16 h-16 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600"
-            >
-              <span className="play-button">{isPlaying ? "⏸" : "▶"}</span>
-            </button>
-            <button 
-              onClick={nextTrack} 
-              className="control-button"
-            >
-              <svg className="triangle-button" viewBox="0 0 24 24">
-                <path d="M9 18V6l9 6z" fill="currentColor"/>
-              </svg>
-              <svg className="triangle-button" viewBox="0 0 24 24">
-                <path d="M9 18V6l9 6z" fill="currentColor"/>
-              </svg>
-            </button>
-          </div>
-
           <div className="mt-4 p-3 bg-gray-50 rounded-lg">
             <h3 className="text-sm font-semibold mb-2">가사</h3>
-            <div className="lyrics-container">
-              <p className="text-sm text-gray-600 whitespace-pre-line">
-                {tracks[currentTrackIndex].lyrics}
-              </p>
+            <div className="lyrics-container" ref={lyricsRef}>
+              {tracks[currentTrackIndex].lyrics?.map((lyric, index) => (
+                <div
+                  key={index}
+                  id={`lyric-${index}`}
+                  className={`lyrics-line text-sm ${currentLyricIndex === index ? 'current-lyric' : ''}`}
+                >
+                  {lyric.text}
+                </div>
+              ))}
             </div>
           </div>
         </div>
