@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Music Player</title>
+  <meta charset="UTF-8">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
   <style>
     body {
@@ -12,6 +13,19 @@
       justify-content: center;
       align-items: center;
       min-height: 100vh;
+    }
+    .volume-control {
+      position: absolute;
+      top: -120px;
+      right: 0;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      display: none;
+    }
+    .volume-container:hover .volume-control {
+      display: block;
     }
   </style>
 </head>
@@ -25,47 +39,89 @@
       const [volume, setVolume] = React.useState(100);
       const [isPlaying, setIsPlaying] = React.useState(false);
       const [currentTrackIndex, setCurrentTrackIndex] = React.useState(0);
+      const [currentTime, setCurrentTime] = React.useState(0);
+      const [duration, setDuration] = React.useState(0);
       const playerRef = React.useRef(null);
+      const [isPlayerReady, setIsPlayerReady] = React.useState(false);
 
       const tracks = [
         {
           name: "Ghost Tokyo",
           videoId: "UWa_OiXDiQA",
-          thumbnail: "/api/placeholder/300/200"
+          thumbnail: "./1번.png",
+          lyrics: "Take me back to Tokyo\nWhere the neon lights grow\nIn the shadows of the night..."
         },
         {
           name: "Hello, See You Again!",
           videoId: "zcaAsuA54pI",
-          thumbnail: "/api/placeholder/300/200"
+          thumbnail: "./2번.png",
+          lyrics: "안녕, 다시 만나요\n변함없는 마음으로\n언제나 그대 곁에..."
         },
         {
           name: "Rumor",
           videoId: "k6UOd4jHgZI",
-          thumbnail: "/api/placeholder/300/200"
+          thumbnail: "./3번.png",
+          lyrics: "들리나요 이 소리가\n멀리서 들려오는\n그대를 향한 나의 목소리..."
         }
       ];
 
       React.useEffect(() => {
-        const tag = document.createElement('script');
-        tag.src = 'https://www.youtube.com/iframe_api';
-        document.body.appendChild(tag);
+        if (!window.YT) {
+          const tag = document.createElement('script');
+          tag.src = 'https://www.youtube.com/iframe_api';
+          document.querySelector('script[src*="iframe_api"]')?.remove();
+          document.body.appendChild(tag);
+          window.onYouTubeIframeAPIReady = initializePlayer;
+        } else {
+          initializePlayer();
+        }
 
-        window.onYouTubeIframeAPIReady = () => {
-          playerRef.current = new window.YT.Player('youtube-player', {
-            height: '0',
-            width: '0',
-            videoId: tracks[currentTrackIndex].videoId,
-            events: {
-              onStateChange: (event) => {
-                setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
-              },
-            },
-          });
+        return () => {
+          if (playerRef.current) {
+            playerRef.current.destroy();
+          }
         };
+      }, []);
+
+      const initializePlayer = () => {
+        playerRef.current = new window.YT.Player('youtube-player', {
+          height: '0',
+          width: '0',
+          videoId: tracks[currentTrackIndex].videoId,
+          events: {
+            onReady: () => {
+              setIsPlayerReady(true);
+              playerRef.current.setVolume(volume);
+            },
+            onStateChange: (event) => {
+              setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
+            },
+          },
+        });
+
+        // 시간 업데이트를 위한 타이머 설정
+        setInterval(() => {
+          if (playerRef.current && isPlayerReady) {
+            setCurrentTime(playerRef.current.getCurrentTime());
+            setDuration(playerRef.current.getDuration());
+          }
+        }, 1000);
+      };
+
+      React.useEffect(() => {
+        if (isPlayerReady && playerRef.current) {
+          playerRef.current.loadVideoById(tracks[currentTrackIndex].videoId);
+        }
       }, [currentTrackIndex]);
 
+      const formatTime = (seconds) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = Math.floor(seconds % 60);
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+      };
+
       const togglePlay = () => {
-        if (playerRef.current) {
+        if (playerRef.current && isPlayerReady) {
           if (isPlaying) {
             playerRef.current.pauseVideo();
           } else {
@@ -77,8 +133,16 @@
       const handleVolumeChange = (e) => {
         const newVolume = e.target.value;
         setVolume(newVolume);
-        if (playerRef.current) {
+        if (playerRef.current && isPlayerReady) {
           playerRef.current.setVolume(newVolume);
+        }
+      };
+
+      const handleTimeChange = (e) => {
+        const newTime = e.target.value;
+        if (playerRef.current && isPlayerReady) {
+          playerRef.current.seekTo(newTime);
+          setCurrentTime(newTime);
         }
       };
 
@@ -88,56 +152,83 @@
 
       const prevTrack = () => {
         setCurrentTrackIndex((prev) => (prev - 1 + tracks.length) % tracks.length);
-      };
+ };
 
-      return (
-        <div className="w-72 bg-white p-4 rounded-lg shadow-lg">
-          <div id="youtube-player" className="hidden"></div>
-          <div className="text-center mb-4">
-            <h2 className="text-xl font-semibold">{tracks[currentTrackIndex].name}</h2>
-          </div>
-          <div className="relative w-full h-48 mb-4">
-            <img
-              src={tracks[currentTrackIndex].thumbnail}
-              alt="Album Art"
-              className="w-full h-full object-cover rounded-lg"
+      돌아가다 (
+ <div className="w-96 bg-흰색 p-4 둥근-lg shadow-lg">
+ <div id="youtube 플레이어" 클래스이름="숨겨진"></div>
+ <div className="relative">
+ <div className="text-center mb-4">
+ <h2 className="text-xl font-semibold">{tracks[currentTrackIndex].이름}//h2>
+ </div>
+ <div className="volume-container 절대 top-0 right-0">
+ <버튼 className="p-2 반올림-풀 호버:bg-gray-100">
+ 🔊
+ </버튼>
+ <div className="볼륨 제어">
+ <입력
+ type="range"
+ min="0"
+ max="100"
+ 값 = {volume}
+ onChange={handleVolumeChange}
+ className="w-32 변환 - rotate-90"
+                />
+ </div>
+ </div>
+ </div>
+ <div className="상대 w-full h-48 mb-4">
+ <img
+ src={tracks[currentTrackIndex].썸네일}
+ alt="앨범 아트"
+ className="w-full h-full 객체-커버 라운드-LG"
             />
-          </div>
-          <div className="mb-4">
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={volume}
-              onChange={handleVolumeChange}
-              className="w-full"
+ </div>
+ <div className="mb-4">
+ <div className="text-sm text-gray-500 mb-1 사이의 유연한 정당성">
+ <span>{formatTime(현재 시간)}<span>
+ <span>{formatTime(duration))}</span>
+ </div>
+ <입력
+ type="range"
+ min="0"
+ max={duration || 0}
+ 값 = {현재 시간}
+ onChange={handleTimeChange}
+ className="w-full"
             />
-          </div>
-          <div className="flex items-center justify-around">
-            <button 
-              onClick={prevTrack} 
-              className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+ </div>
+ <div className="플렉스 항목-중심 정당화-약 mb-4">
+ 버튼 
+ onClick={prevTrack} 
+ className="w-12 h-12 플렉스 항목-중심 정당화-중심 반올림-전체 bg-gray-100 호버:bg-gray-200 전이-colors"
             >
-              ⏮
-            </button>
-            <button 
-              onClick={togglePlay} 
-              className="w-16 h-16 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+ ⏮
+ </버튼>
+ 버튼 
+ onClick={togglePlay} 
+ className="w-16 h-16 플렉스 항목-중심 정당화-중심 반올림-전체 bg-blue-500 텍스트-흰색 호버:bg-blue-600 전이-colors"
             >
-              {isPlaying ? "⏸" : "▶"}
-            </button>
-            <button 
-              onClick={nextTrack} 
-              className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+ {재생 중인가요? "⏸" : "▶"}
+ </버튼>
+ 버튼 
+ onClick={nextTrack} 
+ className="w-12 h-12 플렉스 항목-중심 정당화-중심 반올림-전체 bg-gray-100 호버:bg-gray-200 전이-colors"
             >
-              ⏭
-            </button>
-          </div>
-        </div>
-      );
+ ⏭
+ </버튼>
+ </div>
+ <div className="mt-4 p-4 bg-gray-50 반올림-lg">
+ <h3 className="text-lg font-semibold mb-2">가사</h3>
+ <p className="text-gray-600 공백-사전 줄">
+ {tracks[currentTrackIndex].가사}
+ </p>
+ </div>
+ </div>
+ );
     }
 
-    ReactDOM.render(<MusicPlayer />, document.getElementById('root'));
-  </script>
+ ReactDOM.render(<MusicPlayer />, document.getElementById('root');
+ </script>
 </body>
 </html>
