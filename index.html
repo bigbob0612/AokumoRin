@@ -1,78 +1,58 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <title>애니메이션 스타일 플레이어</title>
-  <meta charset="UTF-8">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
-  <style>
+ <title>음악 플레이어</title>
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+ <script src="https://www.youtube.com/iframe_api"></script>
+ <style>
     body {
       margin: 0;
       padding: 0;
-      background-color: #f5f5f5;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f3f3f3;
+    }
+    .triangle-button {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
     }
     .progress-bar {
       width: 100%;
       height: 4px;
       background: #e0e0e0;
-      border-radius: 2px;
       cursor: pointer;
-      position: relative;
+      margin: 10px 0;
     }
-    .progress {
+    .progress-fill {
       height: 100%;
       background: #4a90e2;
-      border-radius: 2px;
-      transition: width 0.1s;
     }
-    .progress-handle {
-      width: 12px;
-      height: 12px;
-      background: #4a90e2;
-      border-radius: 50%;
-      position: absolute;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      cursor: pointer;
+    .volume-slider {
       display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 120px;
     }
-    .progress-bar:hover .progress-handle {
+    .volume-container:hover .volume-slider {
       display: block;
     }
-    .control-button {
-      transition: all 0.2s;
-      cursor: pointer;
-    }
-    .control-button:hover {
-      transform: scale(1.1);
-    }
-    .control-button:active {
-      transform: scale(0.95);
-    }
-    .time-text {
-      font-family: monospace;
-      color: #666;
-    }
-  </style>
+ </style>
 </head>
 <body>
-  <div id="root"></div>
-
-  <script type="text/babel">
+ <div id="root"></div>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.production.min.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.production.min.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
+ <script type="text/babel">
     function MusicPlayer() {
       const [isPlaying, setIsPlaying] = React.useState(false);
-      const [currentTime, setCurrentTime] = React.useState(0);
-      const [duration, setDuration] = React.useState(0);
       const [currentTrackIndex, setCurrentTrackIndex] = React.useState(0);
-      const [isPlayerReady, setIsPlayerReady] = React.useState(false);
       const playerRef = React.useRef(null);
+      const [volume, setVolume] = React.useState(100);
 
       const tracks = [
         {
@@ -81,185 +61,122 @@
           thumbnail: "1번.png"
         },
         {
-          name: "잃어버린것에 의속해서 가는가운데",
+          name: "잃어버린것에 의속해서",
           videoId: "zcaAsuA54pI",
           thumbnail: "2번.png"
         }
       ];
 
       React.useEffect(() => {
-        // YouTube IFrame API 로드
-        const loadYouTubeAPI = () => {
-          return new Promise((resolve) => {
-            const existingScript = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
-            if (existingScript) {
-              if (window.YT) {
-                resolve(window.YT);
-                return;
+        if (!window.YT) {
+          const tag = document.createElement('script');
+          tag.src = 'https://www.youtube.com/iframe_api';
+          document.body.appendChild(tag);
+        }
+
+        window.onYouTubeIframeAPIReady = () => {
+          playerRef.current = new window.YT.Player('youtube-player', {
+            height: '0',
+            width: '0',
+            videoId: tracks[currentTrackIndex].videoId,
+            events: {
+              onStateChange: (event) => {
+                setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
               }
             }
-            
-            const tag = document.createElement('script');
-            tag.src = "https://www.youtube.com/iframe_api";
-            const firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-            window.onYouTubeIframeAPIReady = () => {
-              resolve(window.YT);
-            };
           });
-        };
-
-        const initPlayer = async () => {
-          try {
-            await loadYouTubeAPI();
-            
-            playerRef.current = new window.YT.Player('youtube-player', {
-              height: '0',
-              width: '0',
-              videoId: tracks[currentTrackIndex].videoId,
-              events: {
-                onReady: () => {
-                  setIsPlayerReady(true);
-                },
-                onStateChange: (event) => {
-                  setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
-                },
-                onError: (error) => {
-                  console.error('YouTube Player Error:', error);
-                }
-              },
-              playerVars: {
-                controls: 0,
-                disablekb: 1,
-                fs: 0,
-                rel: 0
-              }
-            });
-          } catch (error) {
-            console.error('Player initialization error:', error);
-          }
-        };
-
-        initPlayer();
-
-        const timeUpdateInterval = setInterval(() => {
-          if (playerRef.current?.getCurrentTime && isPlayerReady) {
-            setCurrentTime(playerRef.current.getCurrentTime());
-            setDuration(playerRef.current.getDuration());
-          }
-        }, 100);
-
-        return () => {
-          clearInterval(timeUpdateInterval);
-          if (playerRef.current) {
-            playerRef.current.destroy();
-          }
         };
       }, []);
 
-      React.useEffect(() => {
-        if (isPlayerReady && playerRef.current?.loadVideoById) {
-          playerRef.current.loadVideoById({
-            videoId: tracks[currentTrackIndex].videoId,
-            startSeconds: 0
-          });
-        }
-      }, [currentTrackIndex, isPlayerReady]);
-
       const togglePlay = () => {
-        if (!isPlayerReady || !playerRef.current) return;
-        
-        if (isPlaying) {
-          playerRef.current.pauseVideo();
-        } else {
-          playerRef.current.playVideo();
+        if (playerRef.current) {
+          if (isPlaying) {
+            playerRef.current.pauseVideo();
+          } else {
+            playerRef.current.playVideo();
+          }
         }
       };
 
-      const handleTimeChange = (e) => {
-        if (!isPlayerReady || !playerRef.current) return;
-
-        const bar = e.currentTarget;
-        const rect = bar.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const percent = x / rect.width;
-        const newTime = percent * duration;
-        
-        playerRef.current.seekTo(newTime, true);
-        setCurrentTime(newTime);
-      };
-
-      const formatTime = (seconds) => {
-        if (!seconds) return "0:00";
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = Math.floor(seconds % 60);
-        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+      const handleVolumeChange = (e) => {
+        const newVolume = parseInt(e.target.value);
+        setVolume(newVolume);
+        if (playerRef.current) {
+          playerRef.current.setVolume(newVolume);
+        }
       };
 
       const nextTrack = () => {
-        setCurrentTrackIndex((prev) => (prev + 1) % tracks.length);
+        const nextIndex = (currentTrackIndex + 1) % tracks.length;
+        setCurrentTrackIndex(nextIndex);
+        if (playerRef.current) {
+          playerRef.current.loadVideoById(tracks[nextIndex].videoId);
+        }
       };
 
       const prevTrack = () => {
-        setCurrentTrackIndex((prev) => (prev - 1 + tracks.length) % tracks.length);
+        const prevIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+        setCurrentTrackIndex(prevIndex);
+        if (playerRef.current) {
+          playerRef.current.loadVideoById(tracks[prevIndex].videoId);
+        }
       };
 
       return (
-        <div className="w-80 bg-white rounded-3xl shadow-lg p-6">
-          <div id="youtube-player" className="hidden"></div>
+        <div className="max-w-sm mx-auto bg-white rounded-3xl shadow-lg p-6 mt-10">
+          <div id="youtube-player"></div>
           
-          <div className="mb-4 text-center">
-            <h1 className="text-lg font-bold mb-1">{tracks[currentTrackIndex].name}</h1>
-          </div>
-
-          <div className="relative w-full h-64 mb-6 rounded-2xl overflow-hidden">
-            <img
-              src={tracks[currentTrackIndex].thumbnail}
-              alt="Album Art"
-              className="w-full h-full object-cover"
-            />
+          <div className="relative mb-4">
+            <div className="volume-container absolute right-0 top-0">
+              <button className="p-2 rounded-full hover:bg-gray-100">
+                <span className="text-xl">🔊</span>
+              </button>
+              <div className="volume-slider">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={volume}
+                  onChange={handleVolumeChange}
+                  className="w-full"
+                />
+              </div>
+            </div>
+            <div className="text-center">
+              <h2 className="text-xl font-semibold pt-2">{tracks[currentTrackIndex].name}</h2>
+            </div>
           </div>
 
           <div className="mb-4">
-            <div className="progress-bar" onClick={handleTimeChange}>
-              <div 
-                className="progress" 
-                style={{ width: `${(currentTime / duration) * 100}%` }}
-              >
-                <div 
-                  className="progress-handle"
-                  style={{ left: `${(currentTime / duration) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-            <div className="flex justify-between mt-2">
-              <span className="time-text text-sm">{formatTime(currentTime)}</span>
-              <span className="time-text text-sm">{formatTime(duration)}</span>
-            </div>
+            <img
+              src={tracks[currentTrackIndex].thumbnail}
+              alt="Album Art"
+              className="w-full h-64 object-cover rounded-xl"
+            />
           </div>
 
           <div className="flex justify-center items-center space-x-8">
-            <button 
-              onClick={prevTrack}
-              className="control-button text-2xl focus:outline-none"
- 아리아 레이블="이전 트랙"
-            >
- ⏮
+            <button onClick={prevTrack} className="flex gap-1">
+              <svg className="triangle-button" viewBox="0 0 24 24">
+                <path d="M15 6v12l-9-6z" fill="currentColor"/>
+              </svg>
+ <svg className="삼각 버튼" 보기Box="0 0 24 24">
+ <경로 d="M15 6v12l-9-6z" 채우기="현재 색상"/>
+ </svg>
  </버튼>
  버튼 
  onClick={togglePlay}
- className="제어 버튼 텍스트-4 xl 포커스: outline-none"
- 아리아 레이블={재생 중인가요? "일시 중지": "재생"}
+ className="w-16 h-16 플렉스 아이템-중심 정당화-중심 반올림-전체 bg-gray-200 호버:bg-gray-300 전이-colors"
             >
  {재생 중인가요? "⏸" : "▶"}
  </버튼>
- 버튼 
- onClick={nextTrack}
- className="제어 버튼 텍스트-2 xl 포커스: outline-none"
- 아리아 레이블="다음 트랙"
-            >
- ⏭
+ <Click={nextTrack} className="flex gap-1" 버튼 클릭>
+ <svg className="삼각 버튼" 보기Box="0 0 24 24">
+ <경로 d="M9 18V6l9 6z" 채우기="현재 색상"/>
+ </svg>
+ <svg className="삼각 버튼" 보기Box="0 0 24 24">
+ <경로 d="M9 18V6l9 6z" 채우기="현재 색상"/>
+ </svg>
  </버튼>
  </div>
  </div>
