@@ -1,39 +1,53 @@
 <!DOCTYPE HTML>
 <html>
-<머리>
- <title>음악 플레이어</title>
- <링크 rel="스타일시트" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css ">
- <script src="https://unpkg.com/react @17/umd/react.development.js"></script>
- <script src="https://unpkg.com/react-dom @17/umd/react-dom.development.js"></script>
- <script src="https://unpkg.com/babel-standalone @6/babel.min.js"></script>
- <script src="https://www.youtube.com/iframe_api "></script>
- <스타일>
- 본문 {
- 여백: 0;
- 패딩: 0;
- background-color: #f3f3f3;
+<head>
+  <title>Music Player</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f3f3f3;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
     }
- </스타일>
-</머리>
-<바디>
- <div id="root"></div>
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
+  <script type="text/babel">
+    function MusicPlayer() {
+      const [volume, setVolume] = React.useState(100);
+      const [isPlaying, setIsPlaying] = React.useState(false);
+      const [currentTrackIndex, setCurrentTrackIndex] = React.useState(0);
+      const playerRef = React.useRef(null);
 
- <script type="text/babel">
-    기능. 뮤직플레이어() {
- const [volume, setVolume] = React.useState(100);
- const [isPlaying, setIsPlaying] = React.useState(거짓);
- const [currentTrackIndex, setCurrentTrackIndex] = React.useState(0);
- const playerRef = React.useRef(null);
+      const tracks = [
+        {
+          name: "Ghost Tokyo",
+          videoId: "UWa_OiXDiQA",
+          thumbnail: "/api/placeholder/300/200"
+        },
+        {
+          name: "Hello, See You Again!",
+          videoId: "zcaAsuA54pI",
+          thumbnail: "/api/placeholder/300/200"
+        },
+        {
+          name: "Rumor",
+          videoId: "k6UOd4jHgZI",
+          thumbnail: "/api/placeholder/300/200"
+        }
+      ];
 
- const tracks = [
- {이름: "고스트 도쿄", videoId: "UWa_OiXDiQA", thumbnail: "1.png" },
- {이름: "안녕, 다시 만나요!", videoId: "zcaAsuA54pI", 썸네일: "2.png" },
- {이름: "루머", videoId: "oAa_PoRopS", 썸네일: "3.png" }
- ];
-
- React.useEffect((() => {
- const tag = document.createElement('script');
- tag.src = 'https://www.youtube.com/iframe_api';
+      React.useEffect(() => {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
         document.body.appendChild(tag);
 
         window.onYouTubeIframeAPIReady = () => {
@@ -52,7 +66,19 @@
 
       const togglePlay = () => {
         if (playerRef.current) {
-          isPlaying ? playerRef.current.pauseVideo() : playerRef.current.playVideo();
+          if (isPlaying) {
+            playerRef.current.pauseVideo();
+          } else {
+            playerRef.current.playVideo();
+          }
+        }
+      };
+
+      const handleVolumeChange = (e) => {
+        const newVolume = e.target.value;
+        setVolume(newVolume);
+        if (playerRef.current) {
+          playerRef.current.setVolume(newVolume);
         }
       };
 
@@ -77,15 +103,34 @@
               className="w-full h-full object-cover rounded-lg"
             />
           </div>
+          <div className="mb-4">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={volume}
+              onChange={handleVolumeChange}
+              className="w-full"
+            />
+          </div>
           <div className="flex items-center justify-around">
-            <button onClick={prevTrack} className="w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-500">
-              Prev
+            <button 
+              onClick={prevTrack} 
+              className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              ⏮
             </button>
-            <button onClick={togglePlay} className="w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-500">
-              {isPlaying ? "Pause" : "Play"}
+            <button 
+              onClick={togglePlay} 
+              className="w-16 h-16 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+            >
+              {isPlaying ? "⏸" : "▶"}
             </button>
-            <button onClick={nextTrack} className="w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-500">
-              Next
+            <button 
+              onClick={nextTrack} 
+              className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              ⏭
             </button>
           </div>
         </div>
@@ -96,4 +141,3 @@
   </script>
 </body>
 </html>
-
