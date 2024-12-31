@@ -3,76 +3,82 @@
 <head>
  <title>음악 플레이어</title>
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
- <script src="https://www.youtube.com/iframe_api"></script>
  <style>
     body {
       margin: 0;
       padding: 0;
       background-color: #f3f3f3;
     }
-    .triangle-button {
-      width: 24px;
-      height: 24px;
-      cursor: pointer;
-    }
-    .progress-bar {
-      width: 100%;
-      height: 4px;
-      background: #e0e0e0;
-      cursor: pointer;
-      margin: 10px 0;
-    }
-    .progress-fill {
-      height: 100%;
-      background: #4a90e2;
-    }
-    .volume-slider {
+    .volume-control {
       display: none;
       position: absolute;
-      top: 100%;
+      top: -100px;
       right: 0;
       background: white;
       padding: 10px;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      width: 120px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    .volume-container:hover .volume-slider {
+    .volume-container:hover .volume-control {
       display: block;
+    }
+    .lyrics-container {
+      max-height: 100px;
+      overflow-y: auto;
+    }
+    .triangle-button {
+      width: 24px;
+      height: 24px;
+    }
+    .control-button {
+      display: flex;
+      gap: 2px;
+    }
+    .play-button {
+      font-size: 24px;
     }
  </style>
 </head>
 <body>
  <div id="root"></div>
- <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.production.min.js"></script>
- <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.production.min.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.development.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.development.js"></script>
  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
  <script type="text/babel">
+    // MusicPlayer 컴포넌트의 내용은 동일하게 유지하고 return 부분만 수정
     function MusicPlayer() {
+      const [volume, setVolume] = React.useState(100);
       const [isPlaying, setIsPlaying] = React.useState(false);
       const [currentTrackIndex, setCurrentTrackIndex] = React.useState(0);
+      const [currentTime, setCurrentTime] = React.useState(0);
+      const [duration, setDuration] = React.useState(0);
       const playerRef = React.useRef(null);
-      const [volume, setVolume] = React.useState(100);
 
       const tracks = [
         {
-          name: "유령도쿄",
+          name: "Ghost Tokyo",
           videoId: "UWa_OiXDiQA",
-          thumbnail: "1번.png"
+          thumbnail: "1번.png",
+          lyrics: "Take me back to Tokyo\nWhere the neon lights glow\nIn the shadows of the night..."
         },
         {
-          name: "잃어버린것에 의속해서",
+          name: "Hello, See You Again!",
           videoId: "zcaAsuA54pI",
-          thumbnail: "2번.png"
+          thumbnail: "2번.png",
+          lyrics: "안녕, 다시 만나요\n변함없는 마음으로\n언제나 그대 곁에..."
+        },
+        {
+          name: "Rumor",
+          videoId: "k6UOd4jHgZI",
+          thumbnail: "3번.png",
+          lyrics: "들리나요 이 소리가\n멀리서 들려오는\n그대를 향한 나의 목소리..."
         }
       ];
 
       React.useEffect(() => {
-        if (!window.YT) {
-          const tag = document.createElement('script');
-          tag.src = 'https://www.youtube.com/iframe_api';
-          document.body.appendChild(tag);
-        }
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.body.appendChild(tag);
 
         window.onYouTubeIframeAPIReady = () => {
           playerRef.current = new window.YT.Player('youtube-player', {
@@ -80,13 +86,40 @@
             width: '0',
             videoId: tracks[currentTrackIndex].videoId,
             events: {
+              onReady: (event) => {
+                event.target.setVolume(volume);
+              },
               onStateChange: (event) => {
                 setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
-              }
-            }
+              },
+            },
           });
         };
+
+        const timeUpdateInterval = setInterval(() => {
+          if (playerRef.current && playerRef.current.getCurrentTime) {
+            setCurrentTime(playerRef.current.getCurrentTime());
+            setDuration(playerRef.current.getDuration());
+          }
+        }, 1000);
+
+        return () => {
+          clearInterval(timeUpdateInterval);
+        };
       }, []);
+
+      React.useEffect(() => {
+        if (playerRef.current && playerRef.current.loadVideoById) {
+          playerRef.current.loadVideoById(tracks[currentTrackIndex].videoId);
+        }
+      }, [currentTrackIndex]);
+
+      const formatTime = (seconds) => {
+        if (!seconds) return "0:00";
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = Math.floor(seconds % 60);
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+      };
 
       const togglePlay = () => {
         if (playerRef.current) {
@@ -106,71 +139,91 @@
         }
       };
 
-      const nextTrack = () => {
-        const nextIndex = (currentTrackIndex + 1) % tracks.length;
-        setCurrentTrackIndex(nextIndex);
+      const handleTimeChange = (e) => {
+        const newTime = parseFloat(e.target.value);
         if (playerRef.current) {
-          playerRef.current.loadVideoById(tracks[nextIndex].videoId);
+          playerRef.current.seekTo(newTime);
+          setCurrentTime(newTime);
         }
+      };
+
+      const nextTrack = () => {
+        setCurrentTrackIndex((prev) => (prev + 1) % tracks.length);
       };
 
       const prevTrack = () => {
-        const prevIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
-        setCurrentTrackIndex(prevIndex);
-        if (playerRef.current) {
-          playerRef.current.loadVideoById(tracks[prevIndex].videoId);
-        }
+        setCurrentTrackIndex((prev) => (prev - 1 + tracks.length) % tracks.length);
       };
 
       return (
-        <div className="max-w-sm mx-auto bg-white rounded-3xl shadow-lg p-6 mt-10">
+        <div className="w-80 bg-white p-4 rounded-lg shadow-lg">
           <div id="youtube-player"></div>
-          
-          <div className="relative mb-4">
-            <div className="volume-container absolute right-0 top-0">
+          <div className="relative">
+            <div className="text-center mb-4">
+              <h2 className="text-xl font-semibold">{tracks[currentTrackIndex].name}</h2>
+            </div>
+            <div className="volume-container absolute top-0 right-0">
               <button className="p-2 rounded-full hover:bg-gray-100">
-                <span className="text-xl">🔊</span>
+                🔊
               </button>
-              <div className="volume-slider">
+              <div className="volume-control">
                 <input
                   type="range"
                   min="0"
                   max="100"
                   value={volume}
                   onChange={handleVolumeChange}
-                  className="w-full"
+                  className="w-24 transform -rotate-90"
                 />
               </div>
             </div>
-            <div className="text-center">
-              <h2 className="text-xl font-semibold pt-2">{tracks[currentTrackIndex].name}</h2>
-            </div>
           </div>
-
-          <div className="mb-4">
+          
+          <div className="relative w-full h-48 mb-4">
             <img
               src={tracks[currentTrackIndex].thumbnail}
               alt="Album Art"
-              className="w-full h-64 object-cover rounded-xl"
+              className="w-full h-full object-cover rounded-lg"
             />
           </div>
 
-          <div className="flex justify-center items-center space-x-8">
-            <button onClick={prevTrack} className="flex gap-1">
+          <div className="mb-4">
+            <div className="flex justify-between text-sm text-gray-500 mb-1">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max={duration || 100}
+              value={currentTime || 0}
+              onChange={handleTimeChange}
+              className="w-full"
+            />
+          </div>
+
+          <div className="flex items-center justify-around mb-4">
+            <button 
+              onClick={prevTrack} 
+              className="control-button"
+            >
               <svg className="triangle-button" viewBox="0 0 24 24">
                 <path d="M15 6v12l-9-6z" fill="currentColor"/>
               </svg>
- <svg className="삼각 버튼" 보기Box="0 0 24 24">
- <경로 d="M15 6v12l-9-6z" 채우기="현재 색상"/>
- </svg>
- </버튼>
- 버튼 
- onClick={togglePlay}
- className="w-16 h-16 플렉스 아이템-중심 정당화-중심 반올림-전체 bg-gray-200 호버:bg-gray-300 전이-colors"
+              <svg className="triangle-button" viewBox="0 0 24 24">
+                <path d="M15 6v12l-9-6z" fill="currentColor"/>
+              </svg>
+            </button>
+            <button 
+              onClick={togglePlay} 
+              className="w-16 h-16 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600"
             >
- {재생 중인가요? "⏸" : "▶"}
- </버튼>
- <Click={nextTrack} className="flex gap-1" 버튼 클릭>
+              <span className="play-button">{isPlaying ? "⏸" : "▶"}</span>
+            </button>
+            <button 
+              onClick={nextTrack} 
+ className="제어 버튼"
+            >
  <svg className="삼각 버튼" 보기Box="0 0 24 24">
  <경로 d="M9 18V6l9 6z" 채우기="현재 색상"/>
  </svg>
@@ -178,6 +231,15 @@
  <경로 d="M9 18V6l9 6z" 채우기="현재 색상"/>
  </svg>
  </버튼>
+ </div>
+
+ <div className="mt-4 p-3 bg-gray-50 반올림-lg">
+ <h3 className="text-sm font-semibold mb-2">가사</h3>
+ <div className="가사-용기">
+ <p className="text-sm text-gray-600 공백-사전 줄">
+ {tracks[currentTrackIndex].가사}
+ </p>
+ </div>
  </div>
  </div>
  );
