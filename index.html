@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
- <title>린 플레이리스트</title>
+ <title>음악 플레이어</title>
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
  <style>
     body {
@@ -45,7 +45,6 @@
  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.development.js"></script>
  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
  <script type="text/babel">
-    // MusicPlayer 컴포넌트의 내용은 동일하게 유지하고 return 부분만 수정
     function MusicPlayer() {
       const [volume, setVolume] = React.useState(100);
       const [isPlaying, setIsPlaying] = React.useState(false);
@@ -56,22 +55,19 @@
 
       const tracks = [
         {
-          name: "Ghost Tokyo",
+          name: "유령도쿄",
           videoId: "UWa_OiXDiQA",
-          thumbnail: "1번.png",
-          lyrics: "Take me back to Tokyo\nWhere the neon lights glow\nIn the shadows of the night..."
+          thumbnail: "1번.png"
         },
         {
-          name: "Hello, See You Again!",
+          name: "잃어버린것에 의속해서",
           videoId: "zcaAsuA54pI",
-          thumbnail: "2번.png",
-          lyrics: "안녕, 다시 만나요\n변함없는 마음으로\n언제나 그대 곁에..."
+          thumbnail: "2번.png"
         },
         {
           name: "Rumor",
           videoId: "k6UOd4jHgZI",
-          thumbnail: "3번.png",
-          lyrics: "들리나요 이 소리가\n멀리서 들려오는\n그대를 향한 나의 목소리..."
+          thumbnail: "3번.png"
         }
       ];
 
@@ -103,9 +99,7 @@
           }
         }, 1000);
 
-        return () => {
-          clearInterval(timeUpdateInterval);
-        };
+        return () => clearInterval(timeUpdateInterval);
       }, []);
 
       React.useEffect(() => {
